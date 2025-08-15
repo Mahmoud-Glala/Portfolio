@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div x-data="adminApp()" x-init="init()" class="min-h-screen">
+        <!-- Login Screen -->
+        <div x-show="!isAuthenticated" x-cloak class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900">
+            <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-shield text-2xl text-white"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white">Admin Panel</h1>
+                    <p class="text-gray-400">Portfolio Management System</p>
+                </div>
+                
+                <form @submit.prevent="login()">
+                    <div class="mb-4">
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Username</label>
+                        <input x-model="loginForm.username" type="text" required
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Password</label>
+                        <input x-model="loginForm.password" type="password" required
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
+                    </div>
+                    
+                    <button type="submit" :disabled="loading"
+                            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50">
+                        <span x-show="!loading">Login</span>
+                        <span x-show="loading">Logging in...</span>
+                    </button>
+                </form>
+                
+                <div x-show="error" x-text="error" class="mt-4 p-3 bg-red-600 text-white rounded-lg text-sm"></div>
+                
+                <div class="mt-6 text-center text-sm text-gray-400">
+                    <p>Default credentials: admin / admin123</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div x-show="isAuthenticated" x-cloak class="flex min-h-screen">
+            <!-- Sidebar -->
+            <div class="w-64 bg-gray-800 min-h-screen fixed">
+                <div class="p-6">
+                    <div class="flex items-center space-x-3 mb-8">
+                        <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                            <span class="text-white font-bold">MG</span>
+                        </div>
+                        <div>
+                            <h2 class="text-white font-bold">Admin Panel</h2>
+                            <p class="text-gray-400 text-sm">Mahmoud Glala</p>
+                        </div>
+                    </div>
+                    
+                    <nav class="space-y-2">
+                        <a @click="currentSection = 'dashboard'" 
+                           :class="currentSection === 'dashboard' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'"
+                           class="flex items-center space-x-3 px-4 py-2 rounded-lg cursor-pointer transition">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        
+                        <a @click="currentSection = 'personal'" 
+                           :class="currentSection === 'personal' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'"
+                           class="flex items-center space-x-3 px-4 py-2 rounded-lg cursor-pointer transition">
+                            <i class="fas fa-user"></i>
+                            <span>Personal Info</span>
+                        </a>
+                        
+                        <a @click="currentSection = 'projects'" 
+                           :class="currentSection === 'projects' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'"
+                           class="flex items-center space-x-3 px-4 py-2 rounded-lg cursor-pointer transition">
+                            <i class="fas fa-folder"></i>
+                            <span>Projects</span>
+                        </a>
+                        
+                        <a @click="currentSection = 'skills'" 
+                           :class="currentSection === 'skills' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'"
+                           class="flex items-center space-x-3 px-4 py-2 rounded-lg cursor-pointer transition">
+                            <i class="fas fa-cogs"></i>
+                            <span>Skills</span>
+                        </a>
+                        
+                        <a @click="currentSection = 'messages'" 
+                           :class="currentSection === 'messages' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-gray-700'"
+                           class="flex items-center space-x-3 px-4 py-2 rounded-lg cursor-pointer transition">
+                            <i class="fas fa-envelope"></i>
+                            <span>Messages</span>
+                        </a>
+                    </nav>
+                </div>
+                
+                <div class="absolute bottom-0 w-64 p-6">
+                    <button @click="logout()" 
+                            class="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 ml-64 p-8">
+                <!-- Dashboard -->
+                <div x-show="currentSection === 'dashboard'">
+                    <h1 class="text-3xl font-bold mb-8">Dashboard</h1>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-gray-800 p-6 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Total Projects</p>
+                                    <p class="text-2xl font-bold">3</p>
+                                </div>
+                                <i class="fas fa-folder text-orange-500 text-2xl"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 p-6 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Featured Projects</p>
+                                    <p class="text-2xl font-bold">3</p>
+                                </div>
+                                <i class="fas fa-star text-yellow-500 text-2xl"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 p-6 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Total Skills</p>
+                                    <p class="text-2xl font-bold">12</p>
+                                </div>
+                                <i class="fas fa-cogs text-blue-500 text-2xl"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 p-6 rounded-lg">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-gray-400 text-sm">Unread Messages</p>
+                                    <p class="text-2xl font-bold">0</p>
+                                </div>
+                                <i class="fas fa-envelope text-red-500 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h2 class="text-xl font-bold mb-4">Welcome to Admin Panel</h2>
+                        <p class="text-gray-400">Manage your portfolio content, projects, skills, and messages from this dashboard.</p>
+                    </div>
+                </div>
+
+                <!-- Personal Info -->
+                <div x-show="currentSection === 'personal'">
+                    <h1 class="text-3xl font-bold mb-8">Personal Information</h1>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <form @submit.prevent="updatePersonalInfo()">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-gray-300 text-sm font-bold mb-2">Name</label>
+                                    <input x-model="personalInfo.name" type="text" value="Mahmoud Glala"
+                                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-300 text-sm font-bold mb-2">Title</label>
+                                    <input x-model="personalInfo.title" type="text" value="Full Stack Developer & UI/UX Enthusiast"
+                                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-300 text-sm font-bold mb-2">Email</label>
+                                    <input x-model="personalInfo.email" type="email" value="mahmoud.glala@example.com"
+                                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-300 text-sm font-bold mb-2">Phone</label>
+                                    <input x-model="personalInfo.phone" type="text" value="+20 123 456 7890"
+                                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-300 text-sm font-bold mb-2">Location</label>
+                                    <input x-model="personalInfo.location" type="text" value="Egypt"
+                                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-gray-300 text-sm font-bold mb-2">Summary</label>
+                                <textarea x-model="personalInfo.summary" rows="4"
+                                          class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">Crafting innovative web applications with creative design and robust functionality. Passionate about delivering exceptional user experiences through modern technologies.</textarea>
+                            </div>
+                            
+                            <button type="submit" :disabled="loading"
+                                    class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-lg transition duration-200 disabled:opacity-50">
+                                <span x-show="!loading">Update Personal Info</span>
+                                <span x-show="loading">Updating...</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Projects -->
+                <div x-show="currentSection === 'projects'">
+                    <div class="flex justify-between items-center mb-8">
+                        <h1 class="text-3xl font-bold">Projects</h1>
+                        <button class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                            <i class="fas fa-plus mr-2"></i>Add Project
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold">Roo Florals</h3>
+                                    <p class="text-orange-400">Online Flower Shop</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="text-blue-400 hover:text-blue-300">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-red-400 hover:text-red-300">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-4">A comprehensive e-commerce platform for a flower shop featuring product catalog, shopping cart, order management, and admin panel.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Flask</span>
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Python</span>
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">SQLite</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold">MG Store</h3>
+                                    <p class="text-orange-400">E-commerce Platform</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="text-blue-400 hover:text-blue-300">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-red-400 hover:text-red-300">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-4">A robust e-commerce platform with modern React frontend, Flask backend, and comprehensive admin panel.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">React</span>
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Flask</span>
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">SQLAlchemy</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold">Nexus Agency</h3>
+                                    <p class="text-orange-400">Agency Website</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="text-blue-400 hover:text-blue-300">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-red-400 hover:text-red-300">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-4">A modern agency website showcasing services, portfolio, and team with focus on performance and SEO.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">React</span>
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Tailwind CSS</span>
+                                <span class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Framer Motion</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div x-show="currentSection === 'skills'">
+                    <div class="flex justify-between items-center mb-8">
+                        <h1 class="text-3xl font-bold">Skills</h1>
+                        <button class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition">
+                            <i class="fas fa-plus mr-2"></i>Add Skill
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-xl font-bold mb-4">Technical Skills</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span>Python</span>
+                                    <span class="text-orange-400">90%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-orange-500 h-2 rounded-full" style="width: 90%"></div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <span>JavaScript</span>
+                                    <span class="text-orange-400">88%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 88%"></div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <span>React.js</span>
+                                    <span class="text-orange-400">85%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-xl font-bold mb-4">Professional Skills</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span>Problem Solving</span>
+                                    <button class="text-blue-400 hover:text-blue-300">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span>Team Collaboration</span>
+                                    <button class="text-blue-400 hover:text-blue-300">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span>AI Integration</span>
+                                    <button class="text-blue-400 hover:text-blue-300">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div x-show="currentSection === 'messages'">
+                    <h1 class="text-3xl font-bold mb-8">Messages</h1>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <div class="text-center py-12">
+                            <i class="fas fa-envelope text-gray-600 text-6xl mb-4"></i>
+                            <h3 class="text-xl font-bold text-gray-400 mb-2">No Messages Yet</h3>
+                            <p class="text-gray-500">Contact form submissions will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function adminApp() {
+            return {
+                isAuthenticated: false,
+                currentSection: 'dashboard',
+                loading: false,
+                error: '',
+                loginForm: {
+                    username: '',
+                    password: ''
+                },
+                personalInfo: {
+                    name: 'Mahmoud Glala',
+                    title: 'Full Stack Developer & UI/UX Enthusiast',
+                    email: 'mahmoud.glala@example.com',
+                    phone: '+20 123 456 7890',
+                    location: 'Egypt',
+                    summary: 'Crafting innovative web applications with creative design and robust functionality. Passionate about delivering exceptional user experiences through modern technologies.'
+                },
+
+                init() {
+                    // Check if already authenticated
+                    const token = localStorage.getItem('admin_token');
+                    if (token) {
+                        this.isAuthenticated = true;
+                    }
+                },
+
+                async login() {
+                    this.loading = true;
+                    this.error = '';
+
+                    try {
+                        // Simple authentication check
+                        if (this.loginForm.username === 'admin' && this.loginForm.password === 'admin123') {
+                            this.isAuthenticated = true;
+                            localStorage.setItem('admin_token', 'authenticated');
+                            this.loginForm = { username: '', password: '' };
+                        } else {
+                            this.error = 'Invalid credentials';
+                        }
+                    } catch (error) {
+                        this.error = 'Login failed. Please try again.';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                logout() {
+                    this.isAuthenticated = false;
+                    localStorage.removeItem('admin_token');
+                    this.currentSection = 'dashboard';
+                },
+
+                async updatePersonalInfo() {
+                    this.loading = true;
+                    try {
+                        // Simulate API call
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        alert('Personal information updated successfully!');
+                    } catch (error) {
+                        alert('Failed to update personal information');
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+

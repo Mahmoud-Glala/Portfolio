@@ -1,0 +1,37 @@
+# Global .gitignore for Mahmoud Glala's Portfolio Monorepo
+
+# Node.js and Frontend specific
+/frontend/node_modules
+/frontend/dist
+/frontend/.env
+/frontend/pnpm-debug.log
+/frontend/yarn-debug.log
+/frontend/npm-debug.log
+
+# Python and Backend specific
+/backend/__pycache__
+/backend/*.pyc
+/backend/.env
+/backend/venv/
+/backend/instance/
+
+# Operating System files
+.DS_Store
+
+# IDE and editor files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.bak
+
+# Logs
+*.log
+
+# Other temporary files
+*.tmp
+*.swp
+
+
